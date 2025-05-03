@@ -4,6 +4,7 @@ GitHub Actions Digest Pinner is a tool to help you pin GitHub Actions to specifi
 reliability.
 
 ## Features
+
 - Finds and updates GitHub Actions references in your repository.
 - Ensures all actions are pinned to specific digests.
 
@@ -22,9 +23,12 @@ github-actions-digest-pinner
 
 ## Issues
 
+If you encounter any issues, please report them on the [GitHub Issues page](https://github.com/zisuu/github-actions-digest-pinner/issues)
 
 ## Contributing
+
 Contributions are welcome! Please see the `CONTRIBUTING.md` for guidelines.
 
 ## License
+
 This project is licensed under the MIT License. See the `LICENSE` file for details.
