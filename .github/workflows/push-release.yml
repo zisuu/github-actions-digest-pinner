@@ -13,6 +13,7 @@ on:
 permissions:
   contents: write
   pull-requests: write
+  issues: write
 
 jobs:
   release:
@@ -45,7 +46,7 @@ jobs:
           files: |
             ./cmd/main.go
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.RELEASE_TOKEN }}
 
       - name: Publish Go module
         if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')
