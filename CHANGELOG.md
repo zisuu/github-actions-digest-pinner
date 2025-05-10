@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.3.1](https://github.com/zisuu/github-actions-digest-pinner/compare/v1.3.0...v1.3.1) (2025-05-10)
+
+
+### Bug Fixes
+
+* **deps:** update module github.com/google/go-github/v71 to v72 ([#15](https://github.com/zisuu/github-actions-digest-pinner/issues/15)) ([202224f](https://github.com/zisuu/github-actions-digest-pinner/commit/202224f45f8a7dd0e47967c661b6e8000f0ea8a7))
+
 ## [1.3.0](https://github.com/zisuu/github-actions-digest-pinner/compare/v1.2.0...v1.3.0) (2025-05-10)
 
 
