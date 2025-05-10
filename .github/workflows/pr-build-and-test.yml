@@ -12,7 +12,7 @@ jobs:
       fail-fast: false
       matrix:
         modules:
-          - cmd
+          - ./
           - internal/finder
           - internal/ghclient
           - internal/parser
