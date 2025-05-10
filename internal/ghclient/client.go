@@ -3,10 +3,11 @@ package ghclient
 import (
 	"context"
 	"fmt"
-	"github.com/google/go-github/v71/github"
+	"os"
+
+	"github.com/google/go-github/v72/github"
 	"github.com/zisuu/github-actions-digest-pinner/pgk/types"
 	"golang.org/x/oauth2"
-	"os"
 )
 
 type GitHubClient interface {
