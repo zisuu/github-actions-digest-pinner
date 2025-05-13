@@ -1,0 +1,29 @@
+---
+name: pr-build-and-test
+permissions:
+  contents: read
+on:
+  pull_request:
+    branches: ["main"]
+jobs:
+  pr-build-and-test:
+    runs-on: ubuntu-24.04
+    strategy:
+      fail-fast: false
+      matrix:
+        modules:
+          - cmd/github-actions-digest-pinner
+          - internal/finder
+          - internal/ghclient
+          - internal/parser
+          - internal/updater
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683  # v4.2.2
+      - uses: actions/setup-go@d35c59abb061a4a6fb18e82ac0862c26744d6ab5  # v5.5.0
+        with:
+          cache: 'false'
+          go-version: '1.24.3'
+      - run: go build -v .
+        working-directory: ${{matrix.modules}}
+      - run: go test -v .
+        working-directory: ${{matrix.modules}}

@@ -1,0 +1,19 @@
+---
+name: Yamllint
+permissions:
+  contents: read
+on:
+  pull_request:
+  merge_group:
+jobs:
+  yamllint:
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+      statuses: write
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683  # v4.2.2
+      - uses: reviewdog/action-yamllint@f01d8a48fd8d89f89895499fca2cff09f9e9e8c0  # v1.21.0
+        with:
+          fail_level: any
+          filter_mode: nofilter

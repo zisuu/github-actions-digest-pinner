@@ -1,0 +1,76 @@
+---
+name: Release
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+  issues: write
+
+jobs:
+  versioning:
+    runs-on: ubuntu-latest
+    outputs:
+      new_release: ${{ steps.set-outputs.outputs.new_release }}
+      tag_name: ${{ steps.set-outputs.outputs.tag_name }}
+    steps:
+      - uses: actions/create-github-app-token@df432ceedc7162793a195dd1713ff69aefc7379e  # v2.0.6
+        id: app_token
+        with:
+          app-id: ${{ secrets.APP_ID }}
+          private-key: ${{ secrets.APP_PRIVATE_KEY }}
+
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683  # v4.2.2
+        with:
+          fetch-depth: 0
+          token: ${{ steps.app_token.outputs.token }}
+
+      - uses: googleapis/release-please-action@a02a34c4d625f9be7cb89156071d8567266a2445  # v4.2.0
+        id: rp
+        with:
+          release-type: go
+          token: ${{ steps.app_token.outputs.token }}
+
+      - name: Set outputs
+        id: set-outputs
+        run: |
+          {
+            echo "new_release=${{ steps.rp.outputs.release_created }}";
+            echo "tag_name=${{ steps.rp.outputs.tag_name }}";
+          } >> "$GITHUB_OUTPUT"
+
+  release:
+    name: Create Release
+    needs: versioning
+    if: ${{ needs.versioning.outputs.new_release == 'true' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/create-github-app-token@df432ceedc7162793a195dd1713ff69aefc7379e  # v2.0.6
+        id: app_token
+        with:
+          app-id: ${{ secrets.APP_ID }}
+          private-key: ${{ secrets.APP_PRIVATE_KEY }}
+
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683  # v4.2.2
+        with:
+          fetch-depth: 0
+          ref: ${{ needs.versioning.outputs.tag_name }}
+          token: ${{ steps.app_token.outputs.token }}
+
+      - uses: actions/setup-go@d35c59abb061a4a6fb18e82ac0862c26744d6ab5  # v5.5.0
+        with:
+          go-version: '1.24.3'
+
+      - name: Run GoReleaser
+        uses: goreleaser/goreleaser-action@9c156ee8a17a598857849441385a2041ef570552  # v6.3.0
+        with:
+          distribution: goreleaser
+          version: v2.9.0
+          args: release --clean
+        env:
+          GITHUB_TOKEN: ${{ steps.app_token.outputs.token }}
