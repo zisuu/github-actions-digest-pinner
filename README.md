@@ -1,7 +1,6 @@
 # GitHub Actions Digest Pinner
 
-GitHub Actions Digest Pinner is a tool to help you pin GitHub Actions to specific digests for better security and
-reliability.
+GitHub Actions Digest Pinner is a tool to help you pin GitHub Actions to specific digests for better security and reliability.
 
 ## Features
 
@@ -38,8 +37,10 @@ reliability.
    github-actions-digest-pinner --version
    ```
 
-If you want, you can also install it using `go`, but be aware that the `version` command will not
-work because the ldflags are not set during the `go install` process.
+### Alternative Installation Using `go install`
+
+You can also install the tool using `go install`, but note that the `version` command will not work because the
+`ldflags` are not set during the `go install` process:
 
 ```bash
 go install github.com/zisuu/github-actions-digest-pinner/cmd/github-actions-digest-pinner@latest
@@ -47,19 +48,58 @@ go install github.com/zisuu/github-actions-digest-pinner/cmd/github-actions-dige
 
 ## Usage
 
+### Basic Usage
+
+Run the tool in your repository:
+
 ```bash
-# Run the tool in your repository
-github-actions-digest-pinner
+github-actions-digest-pinner update
 ```
+
+### Commands
+
+- **`scan`**: Scans the repository for GitHub Actions workflows and lists the actions it would update.
+
+  ```bash
+  github-actions-digest-pinner scan --dir <directory> --verbose
+  ```
+
+- **`update`**: Updates GitHub Actions workflows to use pinned digests.
+
+  ```bash
+  github-actions-digest-pinner update --dir <directory> --timeout 30 --verbose
+  ```
+
+## Configuration
+
+The tool does not require configuration files but supports the following flags:
+
+- `--dir`: Specify the directory containing GitHub workflows (default: current directory).
+- `--verbose`: Enable verbose output.
+- `--timeout`: Set the API timeout in seconds (default: 30).
+
+## Output
+
+The tool provides detailed logs when run with the `--verbose` flag, including:
+
+- Workflow files found.
+- Actions parsed from each workflow file.
+- Actions updated with their resolved digests.
 
 ## Issues
 
-If you encounter any issues, please report them on the [GitHub Issues page](https://github.com/zisuu/github-actions-digest-pinner/issues)
+If you encounter any issues, please report them on the [GitHub Issues page](https://github.com/zisuu/github-actions-digest-pinner/issues).
 
 ## Contributing
 
-Contributions are welcome! Please see the `CONTRIBUTING.md` for guidelines.
+Contributions are welcome! To contribute:
+
+1. Fork the repository.
+2. Create a new branch for your feature or bugfix.
+3. Submit a pull request with a clear description of your changes.
+
+See the `CONTRIBUTING.md` for more details.
 
 ## License
 
-This project is licensed under the MIT License. See the `LICENSE` file for details.
+This project is licensed under the [MIT License](LICENSE).
