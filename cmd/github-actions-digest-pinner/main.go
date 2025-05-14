@@ -22,6 +22,16 @@ var (
 	date    = "unknown"
 )
 
+// Centralized error handling function
+func handleError(err error, message string, exit bool) {
+	if err != nil {
+		log.Printf("%s: %v", message, err)
+		if exit {
+			os.Exit(1)
+		}
+	}
+}
+
 func main() {
 	rootCmd := &cobra.Command{
 		Use:   "github-actions-digest-pinner",
@@ -30,9 +40,7 @@ func main() {
 GitHub Actions to specific digests for better security and reliability.`,
 		Run: func(cmd *cobra.Command, args []string) {
 			err := cmd.Help()
-			if err != nil {
-				log.Fatalf("Failed to display help: %v", err)
-			}
+			handleError(err, "Failed to display help", true)
 		},
 	}
 
@@ -65,10 +73,7 @@ GitHub Actions to specific digests for better security and reliability.`,
 			}
 
 			files, err := finder.FindWorkflowFiles(fsys)
-
-			if err != nil {
-				log.Fatalf("Failed to find workflow files: %v", err)
-			}
+			handleError(err, "Failed to find workflow files", true)
 
 			if verbose {
 				log.Printf("Found %d workflow files", len(files))
@@ -81,19 +86,13 @@ GitHub Actions to specific digests for better security and reliability.`,
 				}
 
 				content, err := fsys.Open(file)
-				if err != nil {
-					log.Fatalf("Failed to read file %s: %v", file, err)
-				}
+				handleError(err, fmt.Sprintf("Failed to read file %s", file), true)
 
 				fileContent, err := io.ReadAll(content)
-				if err != nil {
-					log.Fatalf("Failed to read content of file %s: %v", file, err)
-				}
+				handleError(err, fmt.Sprintf("Failed to read content of file %s", file), true)
 
 				actions, err := parser.ParseWorkflowActions(fileContent)
-				if err != nil {
-					log.Fatalf("Failed to parse actions in file %s: %v", file, err)
-				}
+				handleError(err, fmt.Sprintf("Failed to parse actions in file %s", file), true)
 
 				log.Printf("Found %d actions in file %s", len(actions), file)
 
@@ -136,19 +135,14 @@ GitHub Actions to specific digests for better security and reliability.`,
 			}
 
 			files, err := finder.FindWorkflowFiles(fsys)
-
-			if err != nil {
-				log.Fatalf("Failed to find workflow files: %v", err)
-			}
+			handleError(err, "Failed to find workflow files", true)
 
 			if verbose {
 				log.Printf("Found %d workflow files", len(files))
 			}
 
 			totalUpdates, err := workflowUpdater.UpdateWorkflows(ctx, fsys)
-			if err != nil {
-				log.Fatalf("Failed to update workflows: %v", err)
-			}
+			handleError(err, "Failed to update workflows", true)
 
 			log.Printf("Updated %d action references in %v", totalUpdates, time.Since(start).Round(time.Millisecond))
 
