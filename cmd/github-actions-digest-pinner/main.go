@@ -94,10 +94,13 @@ GitHub Actions to specific digests for better security and reliability.`,
 				actions, err := parser.ParseWorkflowActions(fileContent)
 				handleError(err, fmt.Sprintf("Failed to parse actions in file %s", file), true)
 
-				log.Printf("Found %d actions in file %s", len(actions), file)
-
-				for _, action := range actions {
-					fmt.Printf("- Action: %s/%s@%s\n", action.Owner, action.Repo, action.Ref)
+				if verbose {
+					log.Printf("Found %d actions in file %s", len(actions), file)
+					for _, action := range actions {
+						fmt.Printf("- Action: %s/%s@%s\n", action.Owner, action.Repo, action.Ref)
+					}
+				} else if len(actions) > 0 {
+					fmt.Printf("%s: %d actions found\n", file, len(actions))
 				}
 			}
 		},
@@ -144,12 +147,13 @@ GitHub Actions to specific digests for better security and reliability.`,
 			totalUpdates, err := workflowUpdater.UpdateWorkflows(ctx, fsys)
 			handleError(err, "Failed to update workflows", true)
 
-			log.Printf("Updated %d action references in %v", totalUpdates, time.Since(start).Round(time.Millisecond))
-
 			if verbose {
+				log.Printf("Updated %d action references in %v", totalUpdates, time.Since(start).Round(time.Millisecond))
 				for _, file := range files {
 					fmt.Printf("- Processed: %s\n", file)
 				}
+			} else {
+				fmt.Printf("Updated %d action references in %v\n", totalUpdates, time.Since(start).Round(time.Millisecond))
 			}
 		},
 	}
