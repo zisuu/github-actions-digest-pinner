@@ -3,30 +3,37 @@ package updater
 import (
 	"context"
 	"fmt"
-	"github.com/zisuu/github-actions-digest-pinner/internal/finder"
-	"github.com/zisuu/github-actions-digest-pinner/internal/ghclient"
-	"github.com/zisuu/github-actions-digest-pinner/internal/parser"
-	"github.com/zisuu/github-actions-digest-pinner/pgk/types"
 	"io/fs"
 	"log"
 	"os"
 	"path/filepath"
 	"regexp"
 	"strings"
+
+	"github.com/zisuu/github-actions-digest-pinner/internal/finder"
+	"github.com/zisuu/github-actions-digest-pinner/internal/ghclient"
+	"github.com/zisuu/github-actions-digest-pinner/internal/parser"
+	"github.com/zisuu/github-actions-digest-pinner/pgk/types"
 )
 
 var shaRegex = regexp.MustCompile(`^[0-9a-fA-F]{40}$`)
 
+// Updater is responsible for updating GitHub Actions workflow files
 type Updater struct {
 	Client  ghclient.GitHubClient
 	baseDir string
 }
 
-func NewUpdater(client ghclient.GitHubClient, baseDir string) *Updater {
+// NewUpdater creates a new Updater instance with the provided GitHub client
+func NewUpdater(client ghclient.GitHubClient) *Updater {
 	return &Updater{
-		Client:  client,
-		baseDir: baseDir,
+		Client: client,
 	}
+}
+
+// SetBaseDir sets the base directory for file operations
+func (u *Updater) SetBaseDir(dir string) {
+	u.baseDir = dir
 }
 
 // UpdateWorkflows scans for workflow files, parses them, and updates action references
@@ -137,14 +144,17 @@ func (u *Updater) updateSingleActionReference(ctx context.Context, content strin
 
 // writeUpdatedFile writes the updated content back to the file system
 func (u *Updater) writeUpdatedFile(fsys fs.FS, file string, content string) error {
-	// Check if the filesystem supports writing (for tests)
+	// First try if the filesystem supports writing (for tests)
 	if writeFS, ok := fsys.(interface {
 		WriteFile(name string, data []byte, perm fs.FileMode) error
 	}); ok {
 		return writeFS.WriteFile(file, []byte(content), 0644)
 	}
 
-	// For real filesystem operations
+	// For real filesystem operations, use the base directory
+	if u.baseDir == "" {
+		return fmt.Errorf("base directory not set for real filesystem operations")
+	}
 	fullPath := filepath.Join(u.baseDir, file)
 	return os.WriteFile(fullPath, []byte(content), 0644)
 }

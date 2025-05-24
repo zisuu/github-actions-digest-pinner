@@ -4,8 +4,10 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"io/fs"
 	"log"
 	"os"
+	"path/filepath"
 	"time"
 
 	"github.com/spf13/cobra"
@@ -13,6 +15,7 @@ import (
 	"github.com/zisuu/github-actions-digest-pinner/internal/ghclient"
 	"github.com/zisuu/github-actions-digest-pinner/internal/parser"
 	"github.com/zisuu/github-actions-digest-pinner/internal/updater"
+	"github.com/zisuu/github-actions-digest-pinner/pgk/types"
 )
 
 // Build number and versions injected at compile time
@@ -22,96 +25,210 @@ var (
 	date    = "unknown"
 )
 
-// Centralized error handling function
-func handleError(err error, message string, exit bool) {
-	if err != nil {
-		log.Printf("%s: %v", message, err)
-		if exit {
-			os.Exit(1)
-		}
+type WorkflowFinder interface {
+	FindWorkflowFiles(fsys fs.FS) ([]string, error)
+}
+
+type WorkflowParser interface {
+	ParseWorkflowActions(content []byte) ([]types.ActionRef, error)
+}
+
+type WorkflowUpdater interface {
+	UpdateWorkflows(ctx context.Context, fsys fs.FS) (int, error)
+}
+
+// App represents the main application structure.
+type App struct {
+	Out      io.Writer
+	Err      io.Writer
+	Client   ghclient.GitHubClient
+	Finder   WorkflowFinder
+	Parser   WorkflowParser
+	Updater  WorkflowUpdater
+	FS       func(dir string) fs.FS
+	ReadFile func(fsys fs.FS, name string) ([]byte, error)
+}
+
+// NewApp creates a new instance of App with the provided output and error writers.
+func NewApp(out, err io.Writer) *App {
+	return &App{
+		Out:     out,
+		Err:     err,
+		Client:  ghclient.NewGitHubClient(),
+		Finder:  finder.DefaultFinder{},
+		Parser:  parser.DefaultParser{},
+		Updater: updater.NewUpdater(ghclient.NewGitHubClient()),
+		FS: func(dir string) fs.FS {
+			return os.DirFS(dir)
+		},
+		ReadFile: fs.ReadFile,
 	}
 }
 
-func main() {
-	rootCmd := &cobra.Command{
+// scanCommand scans the specified directory for GitHub Actions workflows and prints the actions found.
+func (a *App) scanCommand(dir string, verbose bool) error {
+	if verbose {
+		log.SetOutput(a.Err)
+		log.Println("Starting GitHub Actions digest pinner utility")
+		log.Printf("Scanning directory: %s", dir)
+	}
+
+	fsys := a.FS(dir)
+
+	if verbose {
+		log.Println("Finding workflow files...")
+	}
+
+	files, err := a.Finder.FindWorkflowFiles(fsys)
+	if err != nil {
+		return fmt.Errorf("failed to find workflow files: %w", err)
+	}
+
+	if verbose {
+		log.Printf("Found %d workflow files", len(files))
+		log.Println("Parsing actions in workflow files...")
+	}
+
+	for _, file := range files {
+		if verbose {
+			log.Printf("Processing file: %s", file)
+		}
+
+		fileContent, err := a.ReadFile(fsys, file)
+		if err != nil {
+			return fmt.Errorf("failed to read content of file %s: %w", file, err)
+		}
+
+		actions, err := a.Parser.ParseWorkflowActions(fileContent)
+		if err != nil {
+			return fmt.Errorf("failed to parse actions in file %s: %w", file, err)
+		}
+
+		if verbose {
+			log.Printf("Found %d actions in file %s", len(actions), file)
+			for _, action := range actions {
+				_, err := fmt.Fprintf(a.Out, "- Action: %s/%s@%s\n", action.Owner, action.Repo, action.Ref)
+				if err != nil {
+					return fmt.Errorf("failed to write action output: %w", err)
+				}
+			}
+		} else if len(actions) > 0 {
+			_, err := fmt.Fprintf(a.Out, "%s: %d actions found\n", file, len(actions))
+			if err != nil {
+				return fmt.Errorf("failed to write actions found output: %w", err)
+			}
+		}
+	}
+
+	return nil
+}
+
+// updateCommand updates the GitHub Actions workflows in the specified directory to use pinned digests.
+func (a *App) updateCommand(dir string, timeout int, verbose bool) error {
+	start := time.Now()
+	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(timeout)*time.Second)
+	defer cancel()
+
+	if verbose {
+		log.SetOutput(a.Err)
+		log.Println("Starting GitHub Actions digest pinner utility")
+		log.Printf("Scanning directory: %s", dir)
+	}
+
+	absDir, err := filepath.Abs(dir)
+	if err != nil {
+		return fmt.Errorf("failed to get absolute path: %w", err)
+	}
+
+	fsys := a.FS(absDir)
+
+	if verbose {
+		log.Println("Finding workflow files...")
+	}
+
+	files, err := a.Finder.FindWorkflowFiles(fsys)
+	if err != nil {
+		return fmt.Errorf("failed to find workflow files: %w", err)
+	}
+
+	if verbose {
+		log.Printf("Found %d workflow files", len(files))
+	}
+
+	if upd, ok := a.Updater.(*updater.Updater); ok {
+		upd.SetBaseDir(absDir)
+	}
+
+	totalUpdates, err := a.Updater.UpdateWorkflows(ctx, fsys)
+	if err != nil {
+		return fmt.Errorf("failed to update workflows: %w", err)
+	}
+
+	if verbose {
+		log.Printf("Updated %d action references in %v", totalUpdates, time.Since(start).Round(time.Millisecond))
+		for _, file := range files {
+			_, err := fmt.Fprintf(a.Out, "- Processed: %s\n", file)
+			if err != nil {
+				return fmt.Errorf("failed to write processed file output: %w", err)
+			}
+		}
+	} else {
+		_, err := fmt.Fprintf(a.Out, "Updated %d action references in %v\n", totalUpdates, time.Since(start).Round(time.Millisecond))
+		if err != nil {
+			return fmt.Errorf("failed to write update summary output: %w", err)
+		}
+	}
+
+	return nil
+}
+
+// versionCommand prints the version information of the application.
+func (a *App) versionCommand() {
+	_, err := fmt.Fprintf(a.Out, "Version: %s\nCommit: %s\nDate: %s\n", version, commit, date)
+	if err != nil {
+		log.Printf("Failed to write version output: %v", err)
+	}
+}
+
+// newRootCommand creates the root command for the CLI application.
+func newRootCommand(app *App) *cobra.Command {
+	cmd := &cobra.Command{
 		Use:   "github-actions-digest-pinner",
 		Short: "A tool to pin GitHub Actions to specific digests",
-		Long: `GitHub Actions Digest Pinner is a tool to help you pin
-GitHub Actions to specific digests for better security and reliability.`,
+		Long:  "GitHub Actions Digest Pinner is a tool to help you pin GitHub Actions to specific digests for better security and reliability.",
 		Run: func(cmd *cobra.Command, args []string) {
-			err := cmd.Help()
-			handleError(err, "Failed to display help", true)
+			if err := cmd.Help(); err != nil {
+				log.Printf("Failed to display help: %v", err)
+				os.Exit(1)
+			}
 		},
 	}
 
-	// Add version command
-	rootCmd.AddCommand(&cobra.Command{
+	cmd.AddCommand(&cobra.Command{
 		Use:   "version",
 		Short: "Show the version information",
 		Run: func(cmd *cobra.Command, args []string) {
-			fmt.Printf("Version: %s\nCommit: %s\nDate: %s\n", version, commit, date)
+			app.versionCommand()
 		},
 	})
 
-	// Add scan command
 	scanCmd := &cobra.Command{
 		Use:   "scan",
 		Short: "Scan the repository for GitHub Actions workflows",
 		Run: func(cmd *cobra.Command, args []string) {
 			dir, _ := cmd.Flags().GetString("dir")
 			verbose, _ := cmd.Flags().GetBool("verbose")
-
-			if verbose {
-				log.Println("Starting GitHub Actions digest pinner utility")
-				log.Printf("Scanning directory: %s", dir)
-			}
-
-			fsys := os.DirFS(dir)
-
-			if verbose {
-				log.Println("Finding workflow files...")
-			}
-
-			files, err := finder.FindWorkflowFiles(fsys)
-			handleError(err, "Failed to find workflow files", true)
-
-			if verbose {
-				log.Printf("Found %d workflow files", len(files))
-				log.Println("Parsing actions in workflow files...")
-			}
-
-			for _, file := range files {
-				if verbose {
-					log.Printf("Processing file: %s", file)
-				}
-
-				content, err := fsys.Open(file)
-				handleError(err, fmt.Sprintf("Failed to read file %s", file), true)
-
-				fileContent, err := io.ReadAll(content)
-				handleError(err, fmt.Sprintf("Failed to read content of file %s", file), true)
-
-				actions, err := parser.ParseWorkflowActions(fileContent)
-				handleError(err, fmt.Sprintf("Failed to parse actions in file %s", file), true)
-
-				if verbose {
-					log.Printf("Found %d actions in file %s", len(actions), file)
-					for _, action := range actions {
-						fmt.Printf("- Action: %s/%s@%s\n", action.Owner, action.Repo, action.Ref)
-					}
-				} else if len(actions) > 0 {
-					fmt.Printf("%s: %d actions found\n", file, len(actions))
-				}
+			if err := app.scanCommand(dir, verbose); err != nil {
+				log.Printf("Scan failed: %v", err)
+				os.Exit(1)
 			}
 		},
 	}
 
 	scanCmd.Flags().String("dir", ".", "Directory containing GitHub workflows")
 	scanCmd.Flags().Bool("verbose", false, "Verbose output")
+	cmd.AddCommand(scanCmd)
 
-	rootCmd.AddCommand(scanCmd)
-
-	// Add update command
 	updateCmd := &cobra.Command{
 		Use:   "update",
 		Short: "Update GitHub Actions workflows to use pinned digests",
@@ -119,41 +236,9 @@ GitHub Actions to specific digests for better security and reliability.`,
 			dir, _ := cmd.Flags().GetString("dir")
 			timeout, _ := cmd.Flags().GetInt("timeout")
 			verbose, _ := cmd.Flags().GetBool("verbose")
-
-			start := time.Now()
-			ctx, cancel := context.WithTimeout(context.Background(), time.Duration(timeout)*time.Second)
-			defer cancel()
-
-			if verbose {
-				log.Println("Starting GitHub Actions digest pinner utility")
-				log.Printf("Scanning directory: %s", dir)
-			}
-
-			client := ghclient.NewGitHubClient()
-			workflowUpdater := updater.NewUpdater(client, dir)
-			fsys := os.DirFS(dir)
-
-			if verbose {
-				log.Println("Finding workflow files...")
-			}
-
-			files, err := finder.FindWorkflowFiles(fsys)
-			handleError(err, "Failed to find workflow files", true)
-
-			if verbose {
-				log.Printf("Found %d workflow files", len(files))
-			}
-
-			totalUpdates, err := workflowUpdater.UpdateWorkflows(ctx, fsys)
-			handleError(err, "Failed to update workflows", true)
-
-			if verbose {
-				log.Printf("Updated %d action references in %v", totalUpdates, time.Since(start).Round(time.Millisecond))
-				for _, file := range files {
-					fmt.Printf("- Processed: %s\n", file)
-				}
-			} else {
-				fmt.Printf("Updated %d action references in %v\n", totalUpdates, time.Since(start).Round(time.Millisecond))
+			if err := app.updateCommand(dir, timeout, verbose); err != nil {
+				log.Printf("Update failed: %v", err)
+				os.Exit(1)
 			}
 		},
 	}
@@ -161,11 +246,21 @@ GitHub Actions to specific digests for better security and reliability.`,
 	updateCmd.Flags().String("dir", ".", "Directory containing GitHub workflows")
 	updateCmd.Flags().Int("timeout", 30, "API timeout in seconds")
 	updateCmd.Flags().Bool("verbose", false, "Verbose output")
+	cmd.AddCommand(updateCmd)
 
-	rootCmd.AddCommand(updateCmd)
+	return cmd
+}
+
+// main is the entry point of the application.
+func main() {
+	app := NewApp(os.Stdout, os.Stderr)
+	rootCmd := newRootCommand(app)
 
 	if err := rootCmd.Execute(); err != nil {
-		fmt.Println(err)
+		_, fmtErr := fmt.Fprintln(app.Err, err)
+		if fmtErr != nil {
+			log.Printf("Failed to write error output: %v", fmtErr)
+		}
 		os.Exit(1)
 	}
 }
