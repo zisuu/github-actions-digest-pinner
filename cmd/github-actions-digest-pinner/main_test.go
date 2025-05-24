@@ -150,30 +150,35 @@ func TestScanCommand(t *testing.T) {
 			mockParser := new(MockParser)
 			mockFS := &MockFS{files: make(map[string]*MockFile)}
 
+			// Create a mock filesystem with the test files
+			for _, file := range tt.mockFiles {
+				mockFS.files[file] = &MockFile{content: []byte("dummy content")}
+			}
+
 			app := &App{
 				Out:    &outBuf,
 				Err:    &errBuf,
 				Finder: mockFinder,
 				Parser: mockParser,
-				OpenFile: func(name string) (fs.File, error) {
-					if tt.mockError != nil {
-						return nil, tt.mockError
-					}
-					return mockFS.Open(name)
+				FS: func(dir string) fs.FS {
+					return mockFS
 				},
 				ReadFile: func(fsys fs.FS, name string) ([]byte, error) {
 					if tt.mockError != nil {
 						return nil, tt.mockError
 					}
-					return fs.ReadFile(mockFS, name)
+					file, err := fsys.Open(name)
+					if err != nil {
+						return nil, err
+					}
+					return io.ReadAll(file)
 				},
 			}
 
 			mockFinder.On("FindWorkflowFiles", mock.Anything).Return(tt.mockFiles, nil).Once()
 
-			for _, file := range tt.mockFiles {
-				mockFS.files[file] = &MockFile{content: []byte("dummy content")}
-				if tt.mockError == nil {
+			if tt.mockError == nil {
+				for range tt.mockFiles {
 					mockParser.On("ParseWorkflowActions", []byte("dummy content")).Return(tt.mockActions, nil).Once()
 				}
 			}
@@ -241,17 +246,28 @@ func TestUpdateCommand(t *testing.T) {
 
 			mockFinder := new(MockFinder)
 			mockUpdater := new(MockUpdater)
+			mockFS := &MockFS{files: make(map[string]*MockFile)}
+
+			// Create mock files if needed
+			for _, file := range tt.mockFiles {
+				mockFS.files[file] = &MockFile{content: []byte("dummy content")}
+			}
 
 			app := &App{
 				Out:     &outBuf,
 				Err:     &errBuf,
 				Finder:  mockFinder,
 				Updater: mockUpdater,
-				Client:  new(MockGitHubClient),
-				OpenFile: func(name string) (fs.File, error) {
-					return os.Open(name)
+				FS: func(dir string) fs.FS {
+					return mockFS
 				},
-				ReadFile: fs.ReadFile,
+				ReadFile: func(fsys fs.FS, name string) ([]byte, error) {
+					file, err := fsys.Open(name)
+					if err != nil {
+						return nil, err
+					}
+					return io.ReadAll(file)
+				},
 			}
 
 			mockFinder.On("FindWorkflowFiles", mock.Anything).Return(tt.mockFiles, nil).Once()

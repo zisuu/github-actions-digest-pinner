@@ -246,7 +246,7 @@ jobs:
 
 			// Run updater
 			client := &mockGitHubClient{shaMap: tc.shaMap}
-			u := updater.NewUpdater(client, ".")
+			u := updater.NewUpdater(client)
 			updates, err := u.UpdateWorkflows(context.Background(), memFS)
 
 			// Error handling

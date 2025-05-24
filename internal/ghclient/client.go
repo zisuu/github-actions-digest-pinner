@@ -14,6 +14,7 @@ type GitHubClient interface {
 	ResolveActionSHA(ctx context.Context, action types.ActionRef) (string, error)
 }
 
+// githubClient is a wrapper around the GitHub client.
 type githubClient struct {
 	client *github.Client
 }

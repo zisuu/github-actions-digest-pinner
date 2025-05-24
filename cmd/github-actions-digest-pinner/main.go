@@ -7,6 +7,7 @@ import (
 	"io/fs"
 	"log"
 	"os"
+	"path/filepath"
 	"time"
 
 	"github.com/spf13/cobra"
@@ -17,6 +18,7 @@ import (
 	"github.com/zisuu/github-actions-digest-pinner/pgk/types"
 )
 
+// Build number and versions injected at compile time
 var (
 	version = "unknown"
 	commit  = "unknown"
@@ -35,6 +37,7 @@ type WorkflowUpdater interface {
 	UpdateWorkflows(ctx context.Context, fsys fs.FS) (int, error)
 }
 
+// App represents the main application structure.
 type App struct {
 	Out      io.Writer
 	Err      io.Writer
@@ -42,23 +45,27 @@ type App struct {
 	Finder   WorkflowFinder
 	Parser   WorkflowParser
 	Updater  WorkflowUpdater
-	OpenFile func(name string) (fs.File, error)
+	FS       func(dir string) fs.FS
 	ReadFile func(fsys fs.FS, name string) ([]byte, error)
 }
 
+// NewApp creates a new instance of App with the provided output and error writers.
 func NewApp(out, err io.Writer) *App {
 	return &App{
-		Out:      out,
-		Err:      err,
-		Client:   ghclient.NewGitHubClient(),
-		Finder:   finder.DefaultFinder{},
-		Parser:   parser.DefaultParser{},
-		Updater:  updater.NewUpdater(ghclient.NewGitHubClient(), "."),
-		OpenFile: func(name string) (fs.File, error) { return os.Open(name) },
+		Out:     out,
+		Err:     err,
+		Client:  ghclient.NewGitHubClient(),
+		Finder:  finder.DefaultFinder{},
+		Parser:  parser.DefaultParser{},
+		Updater: updater.NewUpdater(ghclient.NewGitHubClient()),
+		FS: func(dir string) fs.FS {
+			return os.DirFS(dir)
+		},
 		ReadFile: fs.ReadFile,
 	}
 }
 
+// scanCommand scans the specified directory for GitHub Actions workflows and prints the actions found.
 func (a *App) scanCommand(dir string, verbose bool) error {
 	if verbose {
 		log.SetOutput(a.Err)
@@ -66,7 +73,7 @@ func (a *App) scanCommand(dir string, verbose bool) error {
 		log.Printf("Scanning directory: %s", dir)
 	}
 
-	fsys := os.DirFS(dir)
+	fsys := a.FS(dir)
 
 	if verbose {
 		log.Println("Finding workflow files...")
@@ -87,11 +94,6 @@ func (a *App) scanCommand(dir string, verbose bool) error {
 			log.Printf("Processing file: %s", file)
 		}
 
-		// Open file just to check if it exists
-		if _, err := a.OpenFile(file); err != nil {
-			return fmt.Errorf("failed to read file %s: %w", file, err)
-		}
-
 		fileContent, err := a.ReadFile(fsys, file)
 		if err != nil {
 			return fmt.Errorf("failed to read content of file %s: %w", file, err)
@@ -105,16 +107,23 @@ func (a *App) scanCommand(dir string, verbose bool) error {
 		if verbose {
 			log.Printf("Found %d actions in file %s", len(actions), file)
 			for _, action := range actions {
-				fmt.Fprintf(a.Out, "- Action: %s/%s@%s\n", action.Owner, action.Repo, action.Ref)
+				_, err := fmt.Fprintf(a.Out, "- Action: %s/%s@%s\n", action.Owner, action.Repo, action.Ref)
+				if err != nil {
+					return fmt.Errorf("failed to write action output: %w", err)
+				}
 			}
 		} else if len(actions) > 0 {
-			fmt.Fprintf(a.Out, "%s: %d actions found\n", file, len(actions))
+			_, err := fmt.Fprintf(a.Out, "%s: %d actions found\n", file, len(actions))
+			if err != nil {
+				return fmt.Errorf("failed to write actions found output: %w", err)
+			}
 		}
 	}
 
 	return nil
 }
 
+// updateCommand updates the GitHub Actions workflows in the specified directory to use pinned digests.
 func (a *App) updateCommand(dir string, timeout int, verbose bool) error {
 	start := time.Now()
 	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(timeout)*time.Second)
@@ -126,7 +135,12 @@ func (a *App) updateCommand(dir string, timeout int, verbose bool) error {
 		log.Printf("Scanning directory: %s", dir)
 	}
 
-	fsys := os.DirFS(dir)
+	absDir, err := filepath.Abs(dir)
+	if err != nil {
+		return fmt.Errorf("failed to get absolute path: %w", err)
+	}
+
+	fsys := a.FS(absDir)
 
 	if verbose {
 		log.Println("Finding workflow files...")
@@ -141,6 +155,10 @@ func (a *App) updateCommand(dir string, timeout int, verbose bool) error {
 		log.Printf("Found %d workflow files", len(files))
 	}
 
+	if upd, ok := a.Updater.(*updater.Updater); ok {
+		upd.SetBaseDir(absDir)
+	}
+
 	totalUpdates, err := a.Updater.UpdateWorkflows(ctx, fsys)
 	if err != nil {
 		return fmt.Errorf("failed to update workflows: %w", err)
@@ -149,19 +167,30 @@ func (a *App) updateCommand(dir string, timeout int, verbose bool) error {
 	if verbose {
 		log.Printf("Updated %d action references in %v", totalUpdates, time.Since(start).Round(time.Millisecond))
 		for _, file := range files {
-			fmt.Fprintf(a.Out, "- Processed: %s\n", file)
+			_, err := fmt.Fprintf(a.Out, "- Processed: %s\n", file)
+			if err != nil {
+				return fmt.Errorf("failed to write processed file output: %w", err)
+			}
 		}
 	} else {
-		fmt.Fprintf(a.Out, "Updated %d action references in %v\n", totalUpdates, time.Since(start).Round(time.Millisecond))
+		_, err := fmt.Fprintf(a.Out, "Updated %d action references in %v\n", totalUpdates, time.Since(start).Round(time.Millisecond))
+		if err != nil {
+			return fmt.Errorf("failed to write update summary output: %w", err)
+		}
 	}
 
 	return nil
 }
 
+// versionCommand prints the version information of the application.
 func (a *App) versionCommand() {
-	fmt.Fprintf(a.Out, "Version: %s\nCommit: %s\nDate: %s\n", version, commit, date)
+	_, err := fmt.Fprintf(a.Out, "Version: %s\nCommit: %s\nDate: %s\n", version, commit, date)
+	if err != nil {
+		log.Printf("Failed to write version output: %v", err)
+	}
 }
 
+// newRootCommand creates the root command for the CLI application.
 func newRootCommand(app *App) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "github-actions-digest-pinner",
@@ -222,12 +251,16 @@ func newRootCommand(app *App) *cobra.Command {
 	return cmd
 }
 
+// main is the entry point of the application.
 func main() {
 	app := NewApp(os.Stdout, os.Stderr)
 	rootCmd := newRootCommand(app)
 
 	if err := rootCmd.Execute(); err != nil {
-		fmt.Fprintln(app.Err, err)
+		_, fmtErr := fmt.Fprintln(app.Err, err)
+		if fmtErr != nil {
+			log.Printf("Failed to write error output: %v", fmtErr)
+		}
 		os.Exit(1)
 	}
 }
