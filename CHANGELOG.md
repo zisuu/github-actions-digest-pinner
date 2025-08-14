@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.2](https://github.com/zisuu/github-actions-digest-pinner/compare/v0.2.1...v0.2.2) (2025-08-14)
+
+
+### Bug Fixes
+
+* **deps:** update module sigs.k8s.io/yaml to v1.6.0 ([#18](https://github.com/zisuu/github-actions-digest-pinner/issues/18)) ([095dfc1](https://github.com/zisuu/github-actions-digest-pinner/commit/095dfc17ef29bdbc57550f1669a3b66158447ce3))
+
 ## [0.2.1](https://github.com/zisuu/github-actions-digest-pinner/compare/v0.2.0...v0.2.1) (2025-06-25)
 
 
