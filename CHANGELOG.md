@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.2.2](https://github.com/zisuu/github-actions-digest-pinner/compare/v0.2.1...v0.2.2) (2025-08-24)
+
+
+### Bug Fixes
+
+* **deps:** update module github.com/google/go-github/v73 to v74 ([#17](https://github.com/zisuu/github-actions-digest-pinner/issues/17)) ([50cf2f9](https://github.com/zisuu/github-actions-digest-pinner/commit/50cf2f91d46b66a3b7704082400f0f1f1aa7d42b))
+* **deps:** update module github.com/stretchr/testify to v1.11.0 ([#31](https://github.com/zisuu/github-actions-digest-pinner/issues/31)) ([8d1f7f7](https://github.com/zisuu/github-actions-digest-pinner/commit/8d1f7f7497a7faade9513a94631e2a1dbc238425))
+* **deps:** update module sigs.k8s.io/yaml to v1.6.0 ([#18](https://github.com/zisuu/github-actions-digest-pinner/issues/18)) ([095dfc1](https://github.com/zisuu/github-actions-digest-pinner/commit/095dfc17ef29bdbc57550f1669a3b66158447ce3))
+
 ## [0.2.1](https://github.com/zisuu/github-actions-digest-pinner/compare/v0.2.0...v0.2.1) (2025-06-25)
 
 
