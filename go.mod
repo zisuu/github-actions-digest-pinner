@@ -4,7 +4,6 @@ go 1.24
 
 require (
 	github.com/google/go-github/v74 v74.0.0
-	github.com/google/go-github/v74 v74.0.0
 	github.com/spf13/cobra v1.9.1
 	github.com/stretchr/testify v1.11.1
 	golang.org/x/oauth2 v0.30.0
