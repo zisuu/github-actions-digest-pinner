@@ -3,7 +3,6 @@ module github.com/zisuu/github-actions-digest-pinner
 go 1.24
 
 require (
-	github.com/google/go-github/v73 v73.0.0
 	github.com/google/go-github/v74 v74.0.0
 	github.com/spf13/cobra v1.9.1
 	github.com/stretchr/testify v1.11.1
@@ -16,7 +15,7 @@ require (
 	github.com/google/go-querystring v1.1.0 // indirect
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
-	github.com/spf13/pflag v1.0.6 // indirect
+	github.com/spf13/pflag v1.0.7 // indirect
 	github.com/stretchr/objx v0.5.2 // indirect
 	go.yaml.in/yaml/v2 v2.4.2 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
