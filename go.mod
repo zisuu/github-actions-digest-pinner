@@ -1,6 +1,6 @@
 module github.com/zisuu/github-actions-digest-pinner
 
-go 1.24
+go 1.25
 
 require (
 	github.com/google/go-github/v74 v74.0.0
