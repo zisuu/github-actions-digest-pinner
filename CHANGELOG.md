@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.3.1](https://github.com/zisuu/github-actions-digest-pinner/compare/v0.3.0...v0.3.1) (2025-09-13)
+
+
+### Bug Fixes
+
+* **deps:** update module github.com/spf13/cobra to v1.10.1 ([#38](https://github.com/zisuu/github-actions-digest-pinner/issues/38)) ([61d8578](https://github.com/zisuu/github-actions-digest-pinner/commit/61d85785916da44f622a35ddc020fc5ead6bd12e))
+* **deps:** update module golang.org/x/oauth2 to v0.31.0 ([#41](https://github.com/zisuu/github-actions-digest-pinner/issues/41)) ([311301d](https://github.com/zisuu/github-actions-digest-pinner/commit/311301d89b2b417de026293f2a3755904feb062b))
+
 ## [0.3.0](https://github.com/zisuu/github-actions-digest-pinner/compare/v0.2.1...v0.3.0) (2025-08-27)
 
 
