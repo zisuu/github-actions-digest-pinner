@@ -3,7 +3,7 @@ module github.com/zisuu/github-actions-digest-pinner
 go 1.25
 
 require (
-	github.com/google/go-github/v74 v74.0.0
+	github.com/google/go-github/v75 v75.0.0
 	github.com/google/go-github/v75 v75.0.0
 	github.com/spf13/cobra v1.10.1
 	github.com/stretchr/testify v1.11.1
