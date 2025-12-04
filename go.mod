@@ -4,7 +4,7 @@ go 1.25
 
 require (
 	github.com/google/go-github/v75 v75.0.0
-	github.com/spf13/cobra v1.10.1
+	github.com/spf13/cobra v1.10.2
 	github.com/stretchr/testify v1.11.1
 	golang.org/x/oauth2 v0.33.0
 	sigs.k8s.io/yaml v1.6.0
