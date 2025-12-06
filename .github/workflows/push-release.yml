@@ -19,7 +19,7 @@ jobs:
       new_release: ${{ steps.set-outputs.outputs.new_release }}
       tag_name: ${{ steps.set-outputs.outputs.tag_name }}
     steps:
-      - uses: actions/create-github-app-token@7e473efe3cb98aa54f8d4bac15400b15fad77d94  # v2.2.0
+      - uses: actions/create-github-app-token@29824e69f54612133e76f7eaac726eef6c875baf  # v2.2.1
         id: app_token
         with:
           app-id: ${{ secrets.APP_ID }}
@@ -50,7 +50,7 @@ jobs:
     if: ${{ needs.versioning.outputs.new_release == 'true' }}
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/create-github-app-token@7e473efe3cb98aa54f8d4bac15400b15fad77d94  # v2.2.0
+      - uses: actions/create-github-app-token@29824e69f54612133e76f7eaac726eef6c875baf  # v2.2.1
         id: app_token
         with:
           app-id: ${{ secrets.APP_ID }}
