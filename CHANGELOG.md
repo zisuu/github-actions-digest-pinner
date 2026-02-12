@@ -1,5 +1,21 @@
 # Changelog
 
+## [0.3.1](https://github.com/zisuu/github-actions-digest-pinner/compare/v0.3.0...v0.3.1) (2026-02-12)
+
+
+### Bug Fixes
+
+* **deps:** update github.com/google/go-github to v75 ([#46](https://github.com/zisuu/github-actions-digest-pinner/issues/46)) ([5ae2959](https://github.com/zisuu/github-actions-digest-pinner/commit/5ae2959497e5225e834192c8dd3726003dea4829))
+* **deps:** update module github.com/google/go-github/v74 to v75 ([#43](https://github.com/zisuu/github-actions-digest-pinner/issues/43)) ([4a9c54e](https://github.com/zisuu/github-actions-digest-pinner/commit/4a9c54ed4f2bd09fd3a0f4411d02d9dad63fdfac))
+* **deps:** update module github.com/google/go-github/v75 to v82 ([#67](https://github.com/zisuu/github-actions-digest-pinner/issues/67)) ([0ef7dd8](https://github.com/zisuu/github-actions-digest-pinner/commit/0ef7dd8d324f6d567ab163ebc5a8fd2d88d62484))
+* **deps:** update module github.com/spf13/cobra to v1.10.1 ([#38](https://github.com/zisuu/github-actions-digest-pinner/issues/38)) ([61d8578](https://github.com/zisuu/github-actions-digest-pinner/commit/61d85785916da44f622a35ddc020fc5ead6bd12e))
+* **deps:** update module github.com/spf13/cobra to v1.10.2 ([#60](https://github.com/zisuu/github-actions-digest-pinner/issues/60)) ([8d806b6](https://github.com/zisuu/github-actions-digest-pinner/commit/8d806b6237e55f9bb07f409532357d669d728931))
+* **deps:** update module golang.org/x/oauth2 to v0.31.0 ([#41](https://github.com/zisuu/github-actions-digest-pinner/issues/41)) ([311301d](https://github.com/zisuu/github-actions-digest-pinner/commit/311301d89b2b417de026293f2a3755904feb062b))
+* **deps:** update module golang.org/x/oauth2 to v0.32.0 ([#44](https://github.com/zisuu/github-actions-digest-pinner/issues/44)) ([860f5e5](https://github.com/zisuu/github-actions-digest-pinner/commit/860f5e5e0f88859f4a6b5a58c226448fa30fd8cc))
+* **deps:** update module golang.org/x/oauth2 to v0.33.0 ([#51](https://github.com/zisuu/github-actions-digest-pinner/issues/51)) ([da287c0](https://github.com/zisuu/github-actions-digest-pinner/commit/da287c0d982dd5628b2a57d77fc1645c44076eb7))
+* **deps:** update module golang.org/x/oauth2 to v0.34.0 ([#63](https://github.com/zisuu/github-actions-digest-pinner/issues/63)) ([356d579](https://github.com/zisuu/github-actions-digest-pinner/commit/356d579f629ced7eb6749633678d9ea9d0736313))
+* **deps:** update module golang.org/x/oauth2 to v0.35.0 ([#68](https://github.com/zisuu/github-actions-digest-pinner/issues/68)) ([c11ae2b](https://github.com/zisuu/github-actions-digest-pinner/commit/c11ae2b301ad586b365e85c109b6a04c522300a9))
+
 ## [0.3.0](https://github.com/zisuu/github-actions-digest-pinner/compare/v0.2.1...v0.3.0) (2025-08-27)
 
 
